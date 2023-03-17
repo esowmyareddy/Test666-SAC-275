@@ -1,0 +1,45 @@
+<html>
+<head>
+    <title>Opportunity Update</title>
+</head>
+<body>
+    <template>
+        <lightning-card title="Opportunity Update" icon-name="standard:opportunity">
+            <div class="slds-m-around_medium">
+                <p>This component will ensure that all opportunities related to an account are updated to Close Lost if their created date is more than 30 days old and their stage is not Close Won.</p>
+            </div>
+            <lightning-record-edit-form object-api-name="Opportunity" onsubmit={handleUpdate}>
+                <lightning-input-field field-name="AccountId" onchange={handleAccountChange}></lightning-input-field>
+                <lightning-button class="slds-m-top_small" type="submit" label="Update Opportunities"></lightning-button>
+            </lightning-record-edit-form>
+        </lightning-card>
+    </template>
+</body>
+<script>
+    import { LightningElement, track } from 'lwc';
+    export default class OpportunityUpdate extends LightningElement {
+        @track accountId;
+
+        handleAccountChange(event) {
+            this.accountId = event.detail.value;
+        }
+
+        handleUpdate(event) {
+            const fields = event.detail.fields;
+            //Get all opportunities related to account
+            const opps = getOpportunitiesByAccountId(this.accountId);
+            //For each opportunity, compare dates and update stage
+            opps.forEach(opp => {
+                const createdDate = opp.CreatedDate;
+                const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+                if (createdDate < thirtyDaysAgo && opp.StageName !== 'Close Won') {
+                    fields.StageName = 'Close Lost';
+                }
+            });
+            this.template.querySelector('lightning-record-edit-form').submit(fields);
+            //Log changes to opportunities
+            logOpportunityUpdates(opps);
+        }
+    }
+</script>
+</html>
